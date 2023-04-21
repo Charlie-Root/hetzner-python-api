@@ -75,7 +75,7 @@ class RobotWebInterface:
         """
         session = self._parse_cookies(response).get("robot")
         if session is not None:
-            self.session_cookie = "robot=" + session
+            self.session_cookie = f"robot={session}"
 
     def connect(self, force=False):
         """
@@ -114,9 +114,7 @@ class RobotWebInterface:
 
         if self.user.startswith("#ws+"):
             raise WebRobotError(
-                "The user {} is a dedicated web service user "
-                "and cannot be used for scraping the web user "
-                "interface.".format(self.user)
+                f"The user {self.user} is a dedicated web service user and cannot be used for scraping the web user interface."
             )
 
         # We need to first visit the Robot so that we later get an OAuth token
@@ -124,7 +122,7 @@ class RobotWebInterface:
         self.logger.debug("Visiting Robot web frontend for the first time.")
         auth_url = self.request("/", xhr=False).getheader("location")
 
-        if not auth_url.startswith("https://" + ROBOT_LOGINHOST + "/"):
+        if not auth_url.startswith(f"https://{ROBOT_LOGINHOST}/"):
             msg = (
                 "https://{0}/ does not redirect to https://{1}/ "
                 "but instead redirects to: {2}"
@@ -140,8 +138,7 @@ class RobotWebInterface:
         response = login_conn.getresponse()
         if response.status != 302:
             raise WebRobotError(
-                "Invalid status code {} while visiting auth"
-                " URL".format(response.status)
+                f"Invalid status code {response.status} while visiting auth URL"
             )
 
         cookies = self._parse_cookies(response)
@@ -153,7 +150,7 @@ class RobotWebInterface:
 
         # Make sure that we always send the auth site's session ID in
         # subsequent requests.
-        cookieval = "; ".join([k + "=" + v for k, v in cookies.items()])
+        cookieval = "; ".join([f"{k}={v}" for k, v in cookies.items()])
         headers = {"Cookie": cookieval}
 
         self.logger.debug("Visiting login page at https://%s/login.", ROBOT_LOGINHOST)
@@ -166,8 +163,7 @@ class RobotWebInterface:
         response = login_conn.getresponse()
         if response.status != 200:
             raise WebRobotError(
-                "Invalid status code {} while visiting login"
-                " page".format(response.status)
+                f"Invalid status code {response.status} while visiting login page"
             )
 
         # Find the CSRF token
@@ -200,7 +196,7 @@ class RobotWebInterface:
         self.logger.debug(
             "New session ID for auth site after login is %r.", cookies["PHPSESSID"]
         )
-        cookieval = "; ".join([k + "=" + v for k, v in cookies.items()])
+        cookieval = "; ".join([f"{k}={v}" for k, v in cookies.items()])
         headers["Cookie"] = cookieval
 
         # This should be the actual OAuth authorization URL.
@@ -209,7 +205,7 @@ class RobotWebInterface:
         if response.status != 302 or location is None:
             raise WebRobotError("Unable to get OAuth authorization URL.")
 
-        if not location.startswith("https://" + ROBOT_LOGINHOST + "/"):
+        if not location.startswith(f"https://{ROBOT_LOGINHOST}/"):
             msg = (
                 "https://{0}/ does not redirect to https://{1}/ "
                 "but instead redirects to: {2}"
@@ -226,7 +222,7 @@ class RobotWebInterface:
         location = response.getheader("Location")
         if response.status != 302 or location is None:
             raise WebRobotError("Failed to get OAuth URL for Robot.")
-        if not location.startswith("https://" + ROBOT_WEBHOST + "/"):
+        if not location.startswith(f"https://{ROBOT_WEBHOST}/"):
             msg = (
                 "https://{0}/ does not redirect to https://{1}/ "
                 "but instead redirects to: {2}"
@@ -241,11 +237,10 @@ class RobotWebInterface:
 
         if response.status != 302:
             raise WebRobotError(
-                "Status after providing OAuth token should be"
-                " 302 and not {}".format(response.status)
+                f"Status after providing OAuth token should be 302 and not {response.status}"
             )
 
-        if response.getheader("location") != "https://" + ROBOT_WEBHOST + "/":
+        if response.getheader("location") != f"https://{ROBOT_WEBHOST}/":
             raise WebRobotError("Robot login with OAuth token has failed.")
 
         self.logged_in = True
@@ -361,7 +356,7 @@ class RobotConnection:
             return node
         else:
             # TODO: Implement escaping of keys.
-            flatkey = map(lambda x: "[" + str(x) + "]", path[1:])
+            flatkey = map(lambda x: f"[{str(x)}]", path[1:])
             return {str(path[0]) + "".join(flatkey): node}
 
         encoded = [self._encode_phpargs(v, path + [k]) for k, v in enum]
@@ -371,9 +366,7 @@ class RobotConnection:
         if data is not None:
             data = urlencode(self._encode_phpargs(data))
 
-        auth = "Basic {}".format(
-            b64encode(f"{self.user}:{self.passwd}".encode("ascii")).decode("ascii")
-        )
+        auth = f'Basic {b64encode(f"{self.user}:{self.passwd}".encode("ascii")).decode("ascii")}'
 
         headers = {"Authorization": auth}
 
@@ -402,22 +395,20 @@ class RobotConnection:
 
         if 200 <= response.status < 300:
             return data
-        else:
-            error = data.get("error", None)
-            if error is None:
-                raise RobotError(f"Unknown error: {data}", response.status)
-            else:
-                err = "{} - {}".format(error["status"], error["message"])
-                missing = error.get("missing", [])
-                invalid = error.get("invalid", [])
-                fields = []
-                if missing is not None:
-                    fields += missing
-                if invalid is not None:
-                    fields += invalid
-                if len(fields) > 0:
-                    err += ", fields: {}".format(", ".join(fields))
-                raise RobotError(err, response.status)
+        error = data.get("error", None)
+        if error is None:
+            raise RobotError(f"Unknown error: {data}", response.status)
+        err = f'{error["status"]} - {error["message"]}'
+        missing = error.get("missing", [])
+        invalid = error.get("invalid", [])
+        fields = []
+        if missing is not None:
+            fields += missing
+        if invalid is not None:
+            fields += invalid
+        if len(fields) > 0:
+            err += f', fields: {", ".join(fields)}'
+        raise RobotError(err, response.status)
 
     def get(self, path):
         return self.request("GET", path)

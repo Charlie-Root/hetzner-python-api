@@ -60,8 +60,7 @@ class Reboot(SubCommand):
 
     def execute(self, robot, parser, args):
         for ip in args.ip:
-            server = robot.servers.get(ip)
-            if server:
+            if server := robot.servers.get(ip):
                 server.reboot(args.method)
 
 
@@ -169,7 +168,7 @@ class ListServers(SubCommand):
 
             infolist = [f"{key}: {val}" for key, val in info.items()]
 
-            self.putline("{} ({})".format(server.ip, ", ".join(infolist)))
+            self.putline(f'{server.ip} ({", ".join(infolist)})')
 
 
 class ShowServer(SubCommand):
@@ -184,7 +183,7 @@ class ShowServer(SubCommand):
             self.print_serverinfo(robot.servers.get(ip))
 
     def print_line(self, key, val):
-        self.putline("{:<15}{}".format(key + ":", val))
+        self.putline("{:<15}{}".format(f"{key}:", val))
 
     def print_serverinfo(self, server):
         info = [
@@ -207,10 +206,7 @@ class ShowServer(SubCommand):
             self.print_line("Running", running)
 
         for ip in server.ips:
-            if ip.rdns.ptr is None:
-                addr = ip.ip
-            else:
-                addr = f"{ip.ip} (rPTR: {ip.rdns.ptr})"
+            addr = ip.ip if ip.rdns.ptr is None else f"{ip.ip} (rPTR: {ip.rdns.ptr})"
             self.print_line("IP address", addr)
 
         for net in server.subnets:
@@ -263,7 +259,7 @@ class ReverseDNS(SubCommand):
         elif args.delptr:
             robot.rdns.get(args.ip).remove()
         elif args.setptr:
-            if args.ip is None or args.value is None:
+            if args.value is None:
                 parser.error(
                     "Need exactly two arguments: IP address and new" " reverse FQDN."
                 )
@@ -315,7 +311,7 @@ class Failover(SubCommand):
                     "Error: you need to set the new destination of"
                     " the failover IP. Option 'dest'"
                 )
-            if len(errs) > 0:
+            if errs:
                 for err in errs:
                     self.putline(err)
             else:
@@ -325,7 +321,7 @@ class Failover(SubCommand):
         else:
             failovers = robot.failover.list()
             if len(failovers) > 0:
-                self.putline("Found %s failover IPs" % len(failovers))
+                self.putline(f"Found {len(failovers)} failover IPs")
             for failover in failovers.values():
                 self.putline(str(failover))
 
@@ -497,12 +493,7 @@ def main():
             "login", "username"
         ) or not subcommand.config.has_option("login", "password"):
             parser.error(
-                (
-                    "You need to set a user and password in {} in order to"
-                    " continue with this operation. You can do this using"
-                    " `hetznerctl config login.username <your-robot-username>' and"
-                    " `hetznerctl config login.password <your-robot-password>'."
-                ).format(args.configfile)
+                f"You need to set a user and password in {args.configfile} in order to continue with this operation. You can do this using `hetznerctl config login.username <your-robot-username>' and `hetznerctl config login.password <your-robot-password>'."
             )
         robot = Robot(
             subcommand.config.get("login", "username"),

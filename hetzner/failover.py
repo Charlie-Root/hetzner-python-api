@@ -10,12 +10,7 @@ class Failover:
     active_server_ip = None
 
     def __repr__(self):
-        return "{} (destination: {}, booked on {} ({}))".format(
-            self.ip,
-            self.active_server_ip,
-            self.server_number,
-            self.server_ip,
-        )
+        return f"{self.ip} (destination: {self.active_server_ip}, booked on {self.server_number} ({self.server_ip}))"
 
     def __init__(self, data):
         for attr, value in data.items():
@@ -46,14 +41,12 @@ class FailoverManager:
         failovers = self.list()
         if ip not in failovers.keys():
             raise RobotError(
-                "Invalid IP address '%s'. Failover IP addresses are %s"
-                % (ip, failovers.keys())
+                f"Invalid IP address '{ip}'. Failover IP addresses are {failovers.keys()}"
             )
         failover = failovers.get(ip)
         if new_destination == failover.active_server_ip:
             raise RobotError(
-                "%s is already the active destination of failover IP %s"
-                % (new_destination, ip)
+                f"{new_destination} is already the active destination of failover IP {ip}"
             )
         available_dests = [s.ip for s in list(self.servers)]
         if new_destination not in available_dests:
@@ -63,6 +56,6 @@ class FailoverManager:
                 % (new_destination, available_dests)
             )
         result = self.conn.post(
-            "/failover/%s" % ip, {"active_server_ip": new_destination}
+            f"/failover/{ip}", {"active_server_ip": new_destination}
         )
         return Failover(result.get("failover"))

@@ -93,7 +93,7 @@ class SubAccountManager:
         readonly,
         comment,
     ):
-        result = self.conn.post(
+        return self.conn.post(
             f"/storagebox/{self.box_id}/subaccount",
             {
                 "homedirectory": homedirectory,
@@ -105,8 +105,6 @@ class SubAccountManager:
                 "comment": comment,
             },
         )
-
-        return result
 
     def delete(self, username):
         self.conn.delete(f"/storagebox/{self.box_id}/subaccount/{username}")

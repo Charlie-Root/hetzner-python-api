@@ -45,10 +45,7 @@ class ValidatedHTTPSConnection(HTTPSConnection):
             "/etc/ssl/certs/ca-bundle.crt",
             "/etc/pki/tls/certs/ca-bundle.crt",
         ]
-        for path in probe_paths:
-            if os.path.exists(path):
-                return path
-        return None
+        return next((path for path in probe_paths if os.path.exists(path)), None)
 
     def connect(self):
         sock = socket.create_connection(

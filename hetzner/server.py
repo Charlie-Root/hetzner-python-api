@@ -200,13 +200,13 @@ class AdminAccount:
             self.exists = False
         else:
             self.exists = True
-            self.login = match.group(1)
+            self.login = match[1]
 
     def _genpasswd(self):
         random.seed(os.urandom(512))
         chars = string.ascii_letters + string.digits + "/()-=+_,;.^~#*@"
         length = random.randint(20, 40)
-        return "".join(random.choice(chars) for i in range(length))
+        return "".join(random.choice(chars) for _ in range(length))
 
     def create(self, passwd=None):
         """
@@ -244,8 +244,8 @@ class AdminAccount:
             li_re = re.compile(r"<li>\s*([^<]*?)\s*</li>")
             ul_match = ul_re.search(data)
             if ul_match is not None:
-                errors = [error.group(1) for error in li_re.finditer(ul_match.group(0))]
-                msg = failmsg + ": " + ", ".join(errors)
+                errors = [error.group(1) for error in li_re.finditer(ul_match[0])]
+                msg = f"{failmsg}: " + ", ".join(errors)
                 raise WebRobotError(msg)
             raise WebRobotError(failmsg)
         self.update_info()
@@ -392,9 +392,7 @@ class Subnet:
             return None
 
     def __repr__(self):
-        return "<Subnet {}/{} (Gateway: {})>".format(
-            self.net_ip, self.mask, self.gateway
-        )
+        return f"<Subnet {self.net_ip}/{self.mask} (Gateway: {self.gateway})>"
 
 
 class SubnetManager:
