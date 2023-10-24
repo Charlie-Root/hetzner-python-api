@@ -4,7 +4,7 @@ import logging
 import re
 from base64 import b64encode
 
-from key import Key
+from .key import Key
 
 try:
     from httplib import BadStatusLine, ResponseNotReady
