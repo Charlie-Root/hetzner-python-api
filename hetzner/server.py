@@ -460,9 +460,11 @@ class Server:
             self.ip = data["server_ip"]
         elif data["server_ip"] is not None:
             self.ip = data["server_ip"]
-        else:
+        elif data["server_ipv6_net"] and data["server_ipv6_net"] is not None:
             self.ip = data["server_ipv6_net"] + "2"
-           
+        else:
+            self.ip = None
+          
         self.number = data["server_number"]
         self.name = data["server_name"]
         self.product = data["product"]
