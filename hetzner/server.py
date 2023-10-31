@@ -330,7 +330,12 @@ class IpManager:
 
     def __iter__(self):
         data = urlencode({"server_ip": self.main_ip})
-        result = self.conn.get(f"/ip?{data}")
+        
+        try:
+            result = self.conn.get(f"/ip?{data}")
+        except RobotError as error:
+            result = []
+            
         return iter([IpAddress(self.conn, ip) for ip in result])
 
 
@@ -427,7 +432,7 @@ class Server:
         self.rescue = RescueSystem(self)
         self.reset = Reset(self)
         self.ips = IpManager(self.conn, self.ip)
-        self.subnets = SubnetManager(self.conn, self.ip)
+        #self.subnets = SubnetManager(self.conn, self.ip)
         self.rdns = ReverseDNSManager(self.conn, self.ip)
         self._admin_account = None
         self.logger = logging.getLogger(f"Server #{self.number}")
@@ -451,13 +456,20 @@ class Server:
 
         data = result["server"]
 
-        self.ip = data["server_ip"]
+        if data["server_ip"]:
+            self.ip = data["server_ip"]
+        elif data["server_ip"] is not None:
+            self.ip = data["server_ip"]
+        else:
+            self.ip = data["server_ipv6_net"] + "2"
+           
         self.number = data["server_number"]
         self.name = data["server_name"]
         self.product = data["product"]
         self.datacenter = data["dc"]
         self.traffic = data["traffic"]
         self.status = data["status"]
+        self.subnets = data["subnet"]
         self.cancelled = data["cancelled"]
         self.paid_until = datetime.strptime(data["paid_until"], "%Y-%m-%d")
         self.linked_storagebox = data["linked_storagebox"]
