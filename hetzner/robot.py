@@ -2,6 +2,7 @@ import functools
 import json
 import logging
 import re
+import ipaddress
 from base64 import b64encode
 
 from .key import Key
@@ -440,7 +441,11 @@ class ServerManager:
         """
         Get server by providing its main IP address.
         """
-        return Server(self.conn, self.conn.get(f"/server/{ip}"))
+        try:
+            ipaddress.IPv4Address(ip)
+            return Server(self.conn, self.conn.get(f"/server/{ip}"))
+        except ipaddress.AddressValueError:
+            raise ValueError("IPv6 addresses are not supported.")
 
     def __iter__(self):
         return iter([Server(self.conn, s) for s in self.conn.get("/server")])
